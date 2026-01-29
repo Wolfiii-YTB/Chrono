@@ -1,0 +1,750 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chronomètre Personnalisable</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Rajdhani:wght@300;500;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary-glow: #00fff2;
+            --secondary-glow: #ff00ea;
+            --bg-dark: #0a0e1a;
+            --bg-card: #151b2e;
+            --text-bright: #ffffff;
+            --text-dim: #8b92b0;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Rajdhani', sans-serif;
+            background: var(--bg-dark);
+            color: var(--text-bright);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow-x: hidden;
+            position: relative;
+        }
+
+        body::before {
+            content: '';
+            position: fixed;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: 
+                radial-gradient(circle at 20% 50%, rgba(0, 255, 242, 0.1) 0%, transparent 50%),
+                radial-gradient(circle at 80% 50%, rgba(255, 0, 234, 0.1) 0%, transparent 50%);
+            animation: bgRotate 20s linear infinite;
+            z-index: 0;
+        }
+
+        @keyframes bgRotate {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .container {
+            position: relative;
+            z-index: 1;
+            max-width: 900px;
+            width: 90%;
+            animation: slideUp 0.8s ease-out;
+        }
+
+        @keyframes slideUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        h1 {
+            font-family: 'Orbitron', monospace;
+            font-size: clamp(2rem, 5vw, 3.5rem);
+            font-weight: 900;
+            text-align: center;
+            margin-bottom: 1rem;
+            background: linear-gradient(135deg, var(--primary-glow), var(--secondary-glow));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            animation: titleGlow 3s ease-in-out infinite;
+        }
+
+        @keyframes titleGlow {
+            0%, 100% { filter: drop-shadow(0 0 10px rgba(0, 255, 242, 0.5)); }
+            50% { filter: drop-shadow(0 0 20px rgba(255, 0, 234, 0.5)); }
+        }
+
+        .subtitle {
+            text-align: center;
+            color: var(--text-dim);
+            font-size: 1.1rem;
+            margin-bottom: 3rem;
+            font-weight: 300;
+        }
+
+        .chrono-card {
+            background: var(--bg-card);
+            border-radius: 24px;
+            padding: 3rem 2rem;
+            box-shadow: 
+                0 20px 60px rgba(0, 0, 0, 0.5),
+                inset 0 1px 0 rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .chrono-card::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: linear-gradient(
+                45deg,
+                transparent 30%,
+                rgba(0, 255, 242, 0.03) 50%,
+                transparent 70%
+            );
+            animation: shimmer 8s linear infinite;
+        }
+
+        @keyframes shimmer {
+            0% { transform: translateX(-100%) translateY(-100%) rotate(45deg); }
+            100% { transform: translateX(100%) translateY(100%) rotate(45deg); }
+        }
+
+        .display {
+            font-family: 'Orbitron', monospace;
+            font-size: clamp(2.5rem, 8vw, 5.5rem);
+            font-weight: 700;
+            text-align: center;
+            margin: 2rem 0;
+            position: relative;
+            letter-spacing: 0.05em;
+            color: var(--text-bright);
+            text-shadow: 
+                0 0 20px rgba(0, 255, 242, 0.5),
+                0 0 40px rgba(0, 255, 242, 0.3),
+                0 0 60px rgba(0, 255, 242, 0.2);
+            transition: all 0.3s ease;
+        }
+
+        .milliseconds {
+            font-size: 0.5em;
+            color: var(--primary-glow);
+            opacity: 0.8;
+        }
+
+        .display.running {
+            color: var(--primary-glow);
+            text-shadow: 
+                0 0 30px rgba(0, 255, 242, 0.8),
+                0 0 60px rgba(0, 255, 242, 0.5),
+                0 0 90px rgba(0, 255, 242, 0.3);
+        }
+
+        .controls {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 1rem;
+            margin-bottom: 2rem;
+        }
+
+        button {
+            font-family: 'Rajdhani', sans-serif;
+            font-size: 1.1rem;
+            font-weight: 700;
+            padding: 1rem 2.5rem;
+            border: none;
+            border-radius: 12px;
+            cursor: pointer;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+            min-width: 140px;
+        }
+
+        button::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 0;
+            height: 0;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.2);
+            transform: translate(-50%, -50%);
+            transition: width 0.6s, height 0.6s;
+        }
+
+        button:active::before {
+            width: 300px;
+            height: 300px;
+        }
+
+        .btn-start {
+            background: linear-gradient(135deg, #00fff2, #00bfa6);
+            color: #0a0e1a;
+            box-shadow: 0 8px 20px rgba(0, 255, 242, 0.3);
+        }
+
+        .btn-start:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 12px 30px rgba(0, 255, 242, 0.4);
+        }
+
+        .btn-pause {
+            background: linear-gradient(135deg, #ff9500, #ff6b00);
+            color: #0a0e1a;
+            box-shadow: 0 8px 20px rgba(255, 149, 0, 0.3);
+        }
+
+        .btn-pause:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 12px 30px rgba(255, 149, 0, 0.4);
+        }
+
+        .btn-reset {
+            background: linear-gradient(135deg, #ff00ea, #c700b8);
+            color: #ffffff;
+            box-shadow: 0 8px 20px rgba(255, 0, 234, 0.3);
+        }
+
+        .btn-reset:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 12px 30px rgba(255, 0, 234, 0.4);
+        }
+
+        .btn-lap {
+            background: linear-gradient(135deg, #ffd700, #ffb700);
+            color: #0a0e1a;
+            box-shadow: 0 8px 20px rgba(255, 215, 0, 0.3);
+        }
+
+        .btn-lap:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 12px 30px rgba(255, 215, 0, 0.4);
+        }
+
+        .lap-times {
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 16px;
+            padding: 1.5rem;
+            margin-bottom: 2rem;
+            border: 1px solid rgba(255, 255, 255, 0.06);
+            max-height: 300px;
+            overflow-y: auto;
+            animation: slideDown 0.4s ease-out;
+        }
+
+        @keyframes slideDown {
+            from {
+                opacity: 0;
+                max-height: 0;
+                padding-top: 0;
+                padding-bottom: 0;
+            }
+            to {
+                opacity: 1;
+                max-height: 300px;
+                padding-top: 1.5rem;
+                padding-bottom: 1.5rem;
+            }
+        }
+
+        .lap-title {
+            font-family: 'Orbitron', monospace;
+            font-size: 1.1rem;
+            font-weight: 700;
+            margin-bottom: 1rem;
+            color: #ffd700;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+        }
+
+        .lap-list {
+            display: flex;
+            flex-direction: column;
+            gap: 0.8rem;
+        }
+
+        .lap-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 1rem 1.5rem;
+            background: rgba(255, 255, 255, 0.03);
+            border-radius: 10px;
+            border-left: 3px solid var(--primary-glow);
+            font-family: 'Orbitron', monospace;
+            animation: lapAppear 0.3s ease-out;
+        }
+
+        @keyframes lapAppear {
+            from {
+                opacity: 0;
+                transform: translateX(-20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+
+        .lap-number {
+            color: var(--text-dim);
+            font-weight: 700;
+            font-size: 0.9rem;
+        }
+
+        .lap-time {
+            color: var(--primary-glow);
+            font-weight: 700;
+            font-size: 1.1rem;
+            text-shadow: 0 0 10px rgba(0, 255, 242, 0.3);
+        }
+
+        .lap-diff {
+            color: var(--text-dim);
+            font-size: 0.85rem;
+            font-style: italic;
+        }
+
+        .lap-diff.faster {
+            color: #00ff88;
+        }
+
+        .lap-diff.slower {
+            color: #ff6b6b;
+        }
+
+        .lap-times::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        .lap-times::-webkit-scrollbar-track {
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 10px;
+        }
+
+        .lap-times::-webkit-scrollbar-thumb {
+            background: var(--primary-glow);
+            border-radius: 10px;
+        }
+
+        .lap-times::-webkit-scrollbar-thumb:hover {
+            background: var(--secondary-glow);
+        }
+
+        button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none !important;
+        }
+
+        .settings {
+            background: rgba(255, 255, 255, 0.03);
+            border-radius: 16px;
+            padding: 2rem;
+            border: 1px solid rgba(255, 255, 255, 0.06);
+            animation: slideUp 0.8s ease-out 0.2s backwards;
+        }
+
+        .settings-title {
+            font-family: 'Orbitron', monospace;
+            font-size: 1.3rem;
+            font-weight: 700;
+            margin-bottom: 1.5rem;
+            color: var(--primary-glow);
+            text-transform: uppercase;
+            letter-spacing: 2px;
+        }
+
+        .input-group {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .input-wrapper {
+            position: relative;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 0.5rem;
+            color: var(--text-dim);
+            font-weight: 500;
+            font-size: 0.95rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        input[type="number"] {
+            width: 100%;
+            padding: 1rem;
+            background: rgba(0, 0, 0, 0.3);
+            border: 2px solid rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+            color: var(--text-bright);
+            font-size: 1.5rem;
+            font-family: 'Orbitron', monospace;
+            font-weight: 700;
+            text-align: center;
+            transition: all 0.3s ease;
+        }
+
+        input[type="number"]:focus {
+            outline: none;
+            border-color: var(--primary-glow);
+            box-shadow: 0 0 20px rgba(0, 255, 242, 0.3);
+            background: rgba(0, 255, 242, 0.05);
+        }
+
+        input[type="number"]::-webkit-inner-spin-button,
+        input[type="number"]::-webkit-outer-spin-button {
+            opacity: 1;
+            height: 40px;
+        }
+
+        .btn-apply {
+            background: linear-gradient(135deg, #4a5fff, #7b5cff);
+            color: #ffffff;
+            box-shadow: 0 8px 20px rgba(74, 95, 255, 0.3);
+            width: 100%;
+        }
+
+        .btn-apply:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 12px 30px rgba(74, 95, 255, 0.4);
+        }
+
+        .info-text {
+            text-align: center;
+            color: var(--text-dim);
+            font-size: 0.9rem;
+            margin-top: 1rem;
+            font-style: italic;
+        }
+
+        @media (max-width: 600px) {
+            .chrono-card {
+                padding: 2rem 1rem;
+            }
+
+            .controls {
+                grid-template-columns: 1fr 1fr;
+            }
+
+            button {
+                width: 100%;
+                padding: 0.9rem 1.5rem;
+                font-size: 1rem;
+                min-width: auto;
+            }
+
+            .input-group {
+                grid-template-columns: 1fr;
+            }
+
+            .display {
+                font-size: clamp(2rem, 8vw, 4rem);
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Chronomètre</h1>
+        <p class="subtitle">Configurez votre temps de départ personnalisé</p>
+
+        <div class="chrono-card">
+            <div class="display" id="display">0j 00:00:00<span class="milliseconds">.000</span></div>
+
+            <div class="controls">
+                <button class="btn-start" id="startBtn">Démarrer</button>
+                <button class="btn-pause" id="pauseBtn" disabled>Pause</button>
+                <button class="btn-lap" id="lapBtn" disabled>Tour</button>
+                <button class="btn-reset" id="resetBtn">Réinitialiser</button>
+            </div>
+
+            <div class="lap-times" id="lapSection" style="display: none;">
+                <div class="lap-title">📊 Temps intermédiaires</div>
+                <div class="lap-list" id="lapList"></div>
+            </div>
+
+            <div class="settings">
+                <div class="settings-title">⚙ Paramètres de départ</div>
+                <div class="input-group">
+                    <div class="input-wrapper">
+                        <label for="days">Jours</label>
+                        <input type="number" id="days" value="0" min="0" max="9999">
+                    </div>
+                    <div class="input-wrapper">
+                        <label for="hours">Heures</label>
+                        <input type="number" id="hours" value="0" min="0" max="23">
+                    </div>
+                    <div class="input-wrapper">
+                        <label for="minutes">Minutes</label>
+                        <input type="number" id="minutes" value="0" min="0" max="59">
+                    </div>
+                    <div class="input-wrapper">
+                        <label for="seconds">Secondes</label>
+                        <input type="number" id="seconds" value="0" min="0" max="59">
+                    </div>
+                    <div class="input-wrapper">
+                        <label for="milliseconds">Millisecondes</label>
+                        <input type="number" id="milliseconds" value="0" min="0" max="999" step="1">
+                    </div>
+                </div>
+                <button class="btn-apply" id="applyBtn">Appliquer le temps de départ</button>
+                <p class="info-text">Le chrono commencera à partir du temps défini</p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let startTime = 0; // Temps de départ en millisecondes
+        let elapsedTime = 0; // Temps écoulé en millisecondes
+        let timerInterval = null;
+        let isRunning = false;
+        let lapTimes = [];
+        let lastLapTime = 0;
+
+        const display = document.getElementById('display');
+        const startBtn = document.getElementById('startBtn');
+        const pauseBtn = document.getElementById('pauseBtn');
+        const resetBtn = document.getElementById('resetBtn');
+        const lapBtn = document.getElementById('lapBtn');
+        const daysInput = document.getElementById('days');
+        const hoursInput = document.getElementById('hours');
+        const minutesInput = document.getElementById('minutes');
+        const secondsInput = document.getElementById('seconds');
+        const millisecondsInput = document.getElementById('milliseconds');
+        const applyBtn = document.getElementById('applyBtn');
+        const lapSection = document.getElementById('lapSection');
+        const lapList = document.getElementById('lapList');
+
+        function formatTime(totalMilliseconds) {
+            const totalSeconds = Math.floor(totalMilliseconds / 1000);
+            const days = Math.floor(totalSeconds / 86400); // 86400 secondes par jour
+            const hours = Math.floor((totalSeconds % 86400) / 3600);
+            const minutes = Math.floor((totalSeconds % 3600) / 60);
+            const seconds = totalSeconds % 60;
+            const milliseconds = totalMilliseconds % 1000;
+            
+            let timeString = '';
+            if (days > 0) {
+                timeString += `${days}j `;
+            }
+            timeString += `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+            
+            return timeString + `<span class="milliseconds">.${String(milliseconds).padStart(3, '0')}</span>`;
+        }
+
+        function formatTimeForLap(totalMilliseconds) {
+            const totalSeconds = Math.floor(totalMilliseconds / 1000);
+            const days = Math.floor(totalSeconds / 86400);
+            const hours = Math.floor((totalSeconds % 86400) / 3600);
+            const minutes = Math.floor((totalSeconds % 3600) / 60);
+            const seconds = totalSeconds % 60;
+            const milliseconds = totalMilliseconds % 1000;
+            
+            let result = '';
+            if (days > 0) {
+                result += `${days}j `;
+            }
+            if (hours > 0 || days > 0) {
+                result += `${hours}h `;
+            }
+            if (minutes > 0 || hours > 0 || days > 0) {
+                result += `${minutes}m `;
+            }
+            result += `${seconds}.${String(milliseconds).padStart(3, '0')}s`;
+            
+            return result;
+        }
+
+        function updateDisplay() {
+            display.innerHTML = formatTime(startTime + elapsedTime);
+        }
+
+        function startTimer() {
+            if (!isRunning) {
+                isRunning = true;
+                const startTimestamp = Date.now() - elapsedTime;
+                
+                timerInterval = setInterval(() => {
+                    elapsedTime = Date.now() - startTimestamp;
+                    updateDisplay();
+                }, 10); // Mise à jour toutes les 10ms pour fluidité
+
+                startBtn.disabled = true;
+                pauseBtn.disabled = false;
+                lapBtn.disabled = false;
+                display.classList.add('running');
+            }
+        }
+
+        function pauseTimer() {
+            if (isRunning) {
+                isRunning = false;
+                clearInterval(timerInterval);
+                startBtn.disabled = false;
+                pauseBtn.disabled = true;
+                lapBtn.disabled = true;
+                display.classList.remove('running');
+                startBtn.textContent = 'Reprendre';
+            }
+        }
+
+        function resetTimer() {
+            isRunning = false;
+            clearInterval(timerInterval);
+            elapsedTime = 0;
+            lapTimes = [];
+            lastLapTime = 0;
+            updateDisplay();
+            startBtn.disabled = false;
+            pauseBtn.disabled = true;
+            lapBtn.disabled = true;
+            display.classList.remove('running');
+            startBtn.textContent = 'Démarrer';
+            lapSection.style.display = 'none';
+            lapList.innerHTML = '';
+        }
+
+        function recordLap() {
+            if (!isRunning) return;
+
+            const currentTime = startTime + elapsedTime;
+            const lapTime = currentTime - lastLapTime;
+            lapTimes.push({
+                total: currentTime,
+                lap: lapTime
+            });
+            lastLapTime = currentTime;
+
+            // Afficher la section des tours
+            lapSection.style.display = 'block';
+
+            // Créer l'élément de tour
+            const lapItem = document.createElement('div');
+            lapItem.className = 'lap-item';
+
+            const lapNumber = document.createElement('span');
+            lapNumber.className = 'lap-number';
+            lapNumber.textContent = `Tour ${lapTimes.length}`;
+
+            const lapTimeDisplay = document.createElement('span');
+            lapTimeDisplay.className = 'lap-time';
+            lapTimeDisplay.textContent = formatTimeForLap(lapTime);
+
+            // Comparer avec le tour précédent
+            if (lapTimes.length > 1) {
+                const previousLapTime = lapTimes[lapTimes.length - 2].lap;
+                const diff = lapTime - previousLapTime;
+                const diffSpan = document.createElement('span');
+                diffSpan.className = 'lap-diff';
+                
+                if (diff < 0) {
+                    diffSpan.classList.add('faster');
+                    diffSpan.textContent = `(-${formatTimeForLap(Math.abs(diff))})`;
+                } else if (diff > 0) {
+                    diffSpan.classList.add('slower');
+                    diffSpan.textContent = `(+${formatTimeForLap(diff)})`;
+                }
+                
+                lapItem.appendChild(lapNumber);
+                lapItem.appendChild(diffSpan);
+                lapItem.appendChild(lapTimeDisplay);
+            } else {
+                lapItem.appendChild(lapNumber);
+                lapItem.appendChild(lapTimeDisplay);
+            }
+
+            // Ajouter en haut de la liste
+            lapList.insertBefore(lapItem, lapList.firstChild);
+        }
+
+        function applyStartTime() {
+            const days = parseInt(daysInput.value) || 0;
+            const hours = parseInt(hoursInput.value) || 0;
+            const minutes = parseInt(minutesInput.value) || 0;
+            const seconds = parseInt(secondsInput.value) || 0;
+            const milliseconds = parseInt(millisecondsInput.value) || 0;
+            
+            startTime = (days * 86400 * 1000) + (hours * 3600 * 1000) + (minutes * 60 * 1000) + (seconds * 1000) + milliseconds;
+            lastLapTime = startTime;
+            resetTimer();
+            
+            // Animation visuelle
+            applyBtn.textContent = '✓ Appliqué !';
+            setTimeout(() => {
+                applyBtn.textContent = 'Appliquer le temps de départ';
+            }, 2000);
+        }
+
+        // Event listeners
+        startBtn.addEventListener('click', startTimer);
+        pauseBtn.addEventListener('click', pauseTimer);
+        resetBtn.addEventListener('click', resetTimer);
+        lapBtn.addEventListener('click', recordLap);
+        applyBtn.addEventListener('click', applyStartTime);
+
+        // Initialiser l'affichage
+        updateDisplay();
+
+        // Permettre l'application avec la touche Entrée
+        [daysInput, hoursInput, minutesInput, secondsInput, millisecondsInput].forEach(input => {
+            input.addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') {
+                    applyStartTime();
+                }
+            });
+        });
+
+        // Raccourcis clavier
+        document.addEventListener('keydown', (e) => {
+            if (e.code === 'Space' && !e.target.matches('input')) {
+                e.preventDefault();
+                if (isRunning) {
+                    pauseTimer();
+                } else {
+                    startTimer();
+                }
+            } else if (e.code === 'KeyL' && isRunning && !e.target.matches('input')) {
+                e.preventDefault();
+                recordLap();
+            } else if (e.code === 'KeyR' && !isRunning && !e.target.matches('input')) {
+                e.preventDefault();
+                resetTimer();
+            }
+        });
+    </script>
+</body>
+</html>
