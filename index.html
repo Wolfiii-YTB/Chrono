@@ -534,6 +534,7 @@
         let isRunning = false;
         let lapTimes = [];
         let lastLapTime = 0;
+        let wakeLock = null; // Pour empêcher l'écran de s'éteindre
 
         const display = document.getElementById('display');
         const startBtn = document.getElementById('startBtn');
@@ -548,6 +549,43 @@
         const applyBtn = document.getElementById('applyBtn');
         const lapSection = document.getElementById('lapSection');
         const lapList = document.getElementById('lapList');
+
+        // Fonction pour empêcher l'écran de s'éteindre
+        async function requestWakeLock() {
+            try {
+                if ('wakeLock' in navigator) {
+                    wakeLock = await navigator.wakeLock.request('screen');
+                    console.log('Wake Lock activé - l\'écran ne s\'éteindra pas');
+                    
+                    // Réactiver le wake lock si l'utilisateur change d'onglet puis revient
+                    wakeLock.addEventListener('release', () => {
+                        console.log('Wake Lock relâché');
+                    });
+                }
+            } catch (err) {
+                console.log('Wake Lock non supporté ou erreur:', err);
+            }
+        }
+
+        // Fonction pour libérer le wake lock
+        async function releaseWakeLock() {
+            if (wakeLock !== null) {
+                try {
+                    await wakeLock.release();
+                    wakeLock = null;
+                    console.log('Wake Lock désactivé');
+                } catch (err) {
+                    console.log('Erreur lors de la libération du Wake Lock:', err);
+                }
+            }
+        }
+
+        // Réactiver le wake lock quand la page redevient visible
+        document.addEventListener('visibilitychange', async () => {
+            if (wakeLock !== null && document.visibilityState === 'visible' && isRunning) {
+                await requestWakeLock();
+            }
+        });
 
         function formatTime(totalMilliseconds) {
             const totalSeconds = Math.floor(totalMilliseconds / 1000);
@@ -593,10 +631,13 @@
             display.innerHTML = formatTime(startTime + elapsedTime);
         }
 
-        function startTimer() {
+        async function startTimer() {
             if (!isRunning) {
                 isRunning = true;
                 const startTimestamp = Date.now() - elapsedTime;
+                
+                // Activer le wake lock pour empêcher l'écran de s'éteindre
+                await requestWakeLock();
                 
                 timerInterval = setInterval(() => {
                     elapsedTime = Date.now() - startTimestamp;
@@ -610,10 +651,14 @@
             }
         }
 
-        function pauseTimer() {
+        async function pauseTimer() {
             if (isRunning) {
                 isRunning = false;
                 clearInterval(timerInterval);
+                
+                // Désactiver le wake lock quand le chrono est en pause
+                await releaseWakeLock();
+                
                 startBtn.disabled = false;
                 pauseBtn.disabled = true;
                 lapBtn.disabled = true;
@@ -622,9 +667,13 @@
             }
         }
 
-        function resetTimer() {
+        async function resetTimer() {
             isRunning = false;
             clearInterval(timerInterval);
+            
+            // Désactiver le wake lock lors du reset
+            await releaseWakeLock();
+            
             elapsedTime = 0;
             lapTimes = [];
             lastLapTime = 0;
@@ -744,6 +793,11 @@
                 e.preventDefault();
                 resetTimer();
             }
+        });
+
+        // Nettoyer le wake lock quand on quitte la page
+        window.addEventListener('beforeunload', () => {
+            releaseWakeLock();
         });
     </script>
 </body>
